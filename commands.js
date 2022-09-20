@@ -46,25 +46,94 @@ export async function InstallGuildCommand(appId, guildId, command) {
 export const FOOTBALL_COMMAND = {
 	name: 'football',
 	description: 'Alert for football events',
+	// type: 1,
 	options: [
 		{
-			type: 3,
-			name: 'event_type',
-			description: 'Event type',
-			choices: [
+			type: 2,	// SUBCOMMAND GROUP
+			name: 'team_alert',
+			description: 'Alerts for fixtures of a team',
+			options: [
 				{
-					name: 'Fixture',
-					value: 'fixture',
+					name: 'add',
+					description: "Add",
+					type: 1,	// SUBCOMMAND
+					options: [
+						{
+							name: 'team_name',
+							description: 'Team name',
+							type: 3,	// STRING
+							required: true,
+							// options: [
+							// 	{
+							// 		name: 'tag',
+							// 		description: 'Allow mentioning user',
+							// 		type: 5,	// BOOLEAN
+							// 		required: false
+							// 	}
+							// ]
+						}
+					]
+				},
+				{
+					name: 'remove',
+					description: "Remove alert",
+					type: 1,	// SUBCOMMAND
+					options: [
+						{
+							name: 'team_name',
+							description: 'Team name',
+							type: 3,	// STRING
+							required: true,
+						}
+					]
 				}
-			],
-			required: true,
+			]
 		},
 		{
-			type: 3,
-			name: 'team_search',
-			description: 'Team to search',
-			required: true,
+			type: 2,	// SUBCOMMAND GROUP
+			name: 'competition_alert',
+			description: 'Alerts for fixtures of a competition',
+			options: [
+				{
+					name: 'add',
+					description: "Add",
+					type: 1,	// SUBCOMMAND
+					options: [
+						{
+							name: 'competition_name',
+							description: 'Competition name',
+							type: 3,	// STRING
+							required: true,
+							// options: [
+							// 	{
+							// 		name: 'tag',
+							// 		description: 'Allow mentioning user',
+							// 		type: 5,	// BOOLEAN
+							// 		required: false
+							// 	}
+							// ]
+						}
+					]
+				},
+				{
+					name: 'remove',
+					description: "Remove alert",
+					type: 1,	// SUBCOMMAND
+					options: [
+						{
+							name: 'competition_name',
+							description: 'Competition name',
+							type: 3,	// STRING
+							required: true,
+						}
+					]
+				}
+			]
+		},
+		{
+			type: 1,	// SUBCOMMAND GROUP
+			name: 'match_events',
+			description: 'Alerts for events of a match',
 		}
-	],
-	type: 1,
+	]
 };
