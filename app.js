@@ -12,8 +12,8 @@ import {
 	HasGuildCommands,
 	FOOTBALL_COMMAND,
 } from './commands.js';
-import { footballAPI } from './footballAPI.js';
-import { DB } from './fakeDB.js';
+import footballAPI from './footballAPI.js';
+import handler from './handlers.js';
 
 // Create an express app
 const app = express();
@@ -43,10 +43,31 @@ app.post('/interactions', async function (req, res) {
 	 */
 	if (type === InteractionType.APPLICATION_COMMAND) {
 		const { name, options } = data;
-		const [{ value: eventType }, { value: teamSearch }] = options;
-		const userId = req.body.member.user.id;
 
 		if (name === 'football' && id) {
+			// console.log(options);
+			
+			switch (options[0].name) {
+				case 'team_alert':
+					if(options[0].options[0].name === 'add')
+						return handler.handleAddTeamAlert(req, res);
+					else if(options[0].options[0].name === 'remove')
+						return handler.handleRemoveTeamAlert(req, res);
+					else
+						return handler.handleUnknownCommand(res, options[0].options[0].name);
+
+				case 'competition_alert':
+					if(options[0].options[0].name === 'add')
+						return handler.handleAddCompetitionAlert(req, res);
+					else if(options[0].options[0].name === 'remove')
+						return handler.handleRemoveCompetitionAlert(req, res);
+					else
+						return handler.handleUnknownCommand(res, options[0].options[0].name);
+			
+				default:
+					return handler.handleUnknownCommand(res, options[0].name);
+			}
+
 			try {
 				const { response: teams } = await footballAPI.searchTeam(teamSearch).then(res => res.json());
 				if (teams.length === 0) {

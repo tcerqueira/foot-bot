@@ -17,4 +17,5 @@ class API {
     }
 }
 
-export const footballAPI = new API('https://api-football-v1.p.rapidapi.com/v3');
+const footballAPI = new API('https://api-football-v1.p.rapidapi.com/v3');
+export default footballAPI;
