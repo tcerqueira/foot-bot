@@ -46,7 +46,6 @@ export async function InstallGuildCommand(appId, guildId, command) {
 export const FOOTBALL_COMMAND = {
 	name: 'football',
 	description: 'Alert for football events',
-	// type: 1,
 	options: [
 		{
 			type: 2,	// SUBCOMMAND GROUP

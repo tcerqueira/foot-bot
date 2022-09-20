@@ -39,26 +39,26 @@ app.post('/interactions', async function (req, res) {
 	 */
 	if (type === InteractionType.APPLICATION_COMMAND) {
 		const { name } = data;
-		const [ commandGroup, subCommand ] = parseCommandArgs(data);
+		const [commandGroup, subCommand] = parseCommandArgs(data);
 
 		if (name === 'football' && id) {
 			switch (commandGroup.name) {
 				case 'team_alert':
-					if(subCommand.name === 'add')
-						return handler.handleAddTeamAlert(req, res);
-					else if(subCommand.name === 'remove')
-						return handler.handleRemoveTeamAlert(req, res);
+					if (subCommand.name === 'add')
+						return handler.handleAddTeamCommand(req, res);
+					else if (subCommand.name === 'remove')
+						return handler.handleRemoveTeamCommand(req, res);
 					else
 						return handler.handleUnknownCommand(res, subCommand.name);
 
 				case 'competition_alert':
-					if(subCommand.name === 'add')
-						return handler.handleAddCompetitionAlert(req, res);
-					else if(subCommand.name === 'remove')
-						return handler.handleRemoveCompetitionAlert(req, res);
+					if (subCommand.name === 'add')
+						return handler.handleAddCompetitionCommand(req, res);
+					else if (subCommand.name === 'remove')
+						return handler.handleRemoveCompetitionCommand(req, res);
 					else
 						return handler.handleUnknownCommand(res, subCommand.name);
-			
+
 				default:
 					return handler.handleUnknownCommand(res, commandGroup.name);
 			}
@@ -69,8 +69,31 @@ app.post('/interactions', async function (req, res) {
 	 * Handle requests from interactive components
 	 * See https://discord.com/developers/docs/interactions/message-components#responding-to-a-component-interaction
 	 */
-	
+	if (type === InteractionType.MESSAGE_COMPONENT) {
+		const componentId = data.custom_id;
+		const [userId, commandGroup, subCommand] = componentId.split('_');
 
+		switch (commandGroup) {
+			case 'team':
+				if(subCommand === 'add')
+					return handler.handleAddTeamSelection(req, res);
+				else if(subCommand === 'remove')
+					return handler.handleRemoveTeamSelection(req, res);
+				else
+					return handler.handleUnknownCommand(res, subCommand);
+
+			case 'competition':
+				if(subCommand === 'add')
+					return handler.handleAddCompetitionSelection(req, res);
+				else if(subCommand === 'remove')
+					return handler.handleRemoveCompetitionSelection(req, res);
+				else
+					return handler.handleUnknownCommand(res, subCommand);
+
+			default:
+				break;
+		}
+	}
 });
 
 app.listen(PORT, () => {

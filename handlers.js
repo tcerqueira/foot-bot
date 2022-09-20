@@ -1,22 +1,13 @@
 import {
-	InteractionResponseType,
-	InteractionResponseFlags,
-	MessageComponentTypes,
-	ButtonStyleTypes,
+    InteractionResponseType,
+    InteractionResponseFlags,
+    MessageComponentTypes
 } from 'discord-interactions';
 import footballAPI from './footballAPI.js';
 import { parseCommandArgs } from './utils.js';
+import db from './db.js'
 
-const handler = {
-    handleAddTeamAlert,
-    handleRemoveTeamAlert,
-    handleAddCompetitionAlert,
-    handleRemoveCompetitionAlert,
-    handleUnknownCommand
-};
-export default handler;
-
-async function handleAddTeamAlert(req, res) {
+async function handleAddTeamCommand(req, res) {
     try {
         const { data } = req.body;
         const userId = req.body.member.user.id;
@@ -33,10 +24,10 @@ async function handleAddTeamAlert(req, res) {
             });
         }
 
-        res.send({
+        return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
-                content: `Search results for: ${teamSearch}`,
+                content: `Search results for: **${teamSearch}** ⚽`,
                 // Indicates it'll be an ephemeral message
                 flags: InteractionResponseFlags.EPHEMERAL,
                 components: [
@@ -46,12 +37,12 @@ async function handleAddTeamAlert(req, res) {
                             {
                                 type: MessageComponentTypes.STRING_SELECT,
                                 // Append game ID
-                                custom_id: `team_add_${userId}`,
+                                custom_id: `${userId}_team_add`,
                                 // Max of 25 choices
                                 options: teams.slice(0, 25).map((item) => {
                                     return {
                                         label: item.team.name,
-                                        value: item.team.name.toLowerCase()
+                                        value: item.team.id
                                     };
                                 })
                             },
@@ -65,34 +56,171 @@ async function handleAddTeamAlert(req, res) {
     }
 }
 
-function handleRemoveTeamAlert(req, res) {
-    console.log('Handling remove team alert.');
+function handleRemoveTeamCommand(req, res) {
+    const userId = req.body.member.user.id;
+    const teamIds = db.users_lists.get(userId).teams;
+
+    if (teamIds.length === 0) {
+        return res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+                content: `No team alerts found\n`
+            }
+        });
+    }
+    
     return res.send({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-            content: 'Handling remove team alert.'
+            content: `Your list of teams alerts ⚽\n`,
+            // Indicates it'll be an ephemeral message
+            flags: InteractionResponseFlags.EPHEMERAL,
+            components: [
+                {
+                    type: MessageComponentTypes.ACTION_ROW,
+                    components: [
+                        {
+                            type: MessageComponentTypes.STRING_SELECT,
+                            // Append game ID
+                            custom_id: `${userId}_team_remove`,
+                            // Max of 25 choices
+                            options: teamIds.slice(0, 25).map((item) => {
+                                return {
+                                    label: item,
+                                    value: item
+                                };
+                            })
+                        },
+                    ],
+                },
+            ],
+        },
+    });
+}
+
+async function handleAddCompetitionCommand(req, res) {
+    try {
+        const { data } = req.body;
+        const userId = req.body.member.user.id;
+        const commandArgs = parseCommandArgs(data);
+        const leagueSearch = commandArgs[2].value;
+
+        const { response: leagues } = await footballAPI.searchLeague(leagueSearch).then(res => res.json());
+        if (leagues.length === 0) {
+            return res.send({
+                type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                data: {
+                    content: `No matches found for **${leagueSearch}**\n`
+                }
+            });
+        }
+
+        return res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+                content: `Search results for: **${leagueSearch}** 🏆`,
+                // Indicates it'll be an ephemeral message
+                flags: InteractionResponseFlags.EPHEMERAL,
+                components: [
+                    {
+                        type: MessageComponentTypes.ACTION_ROW,
+                        components: [
+                            {
+                                type: MessageComponentTypes.STRING_SELECT,
+                                // Append game ID
+                                custom_id: `${userId}_competition_add`,
+                                // Max of 25 choices
+                                options: leagues.slice(0, 25).map((item) => {
+                                    return {
+                                        label: item.league.name,
+                                        value: item.league.id
+                                    };
+                                })
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+function handleRemoveCompetitionCommand(req, res) {
+    const userId = req.body.member.user.id;
+    const competitionIds = db.users_lists.get(userId).competitions;
+
+    if (competitionIds.length === 0) {
+        return res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+                content: `No competition alerts found\n`
+            }
+        });
+    }
+    
+    return res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+            content: `Your list of competition alerts 🏆\n`,
+            // Indicates it'll be an ephemeral message
+            flags: InteractionResponseFlags.EPHEMERAL,
+            components: [
+                {
+                    type: MessageComponentTypes.ACTION_ROW,
+                    components: [
+                        {
+                            type: MessageComponentTypes.STRING_SELECT,
+                            // Append game ID
+                            custom_id: `${userId}_team_remove`,
+                            // Max of 25 choices
+                            options: competitionIds.slice(0, 25).map((item) => {
+                                return {
+                                    label: item,
+                                    value: item
+                                };
+                            })
+                        },
+                    ],
+                },
+            ],
+        },
+    });
+}
+
+function handleAddTeamSelection(req, res) {
+    const { data } = req.body;
+    const [userId] = data.custom_id.split('_');
+    const teamId = data.values[0];
+
+    return res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+            content: `🔔 Alerts for the team enabled 🔔`
         }
     });
 }
 
-function handleAddCompetitionAlert(req, res) {
-    console.log('Handling add competition alert.');
+function handleRemoveTeamSelection(req, res) {
+
+}
+
+function handleAddCompetitionSelection(req, res) {
+    const { data } = req.body;
+    const [userId] = data.custom_id.split('_');
+    const teamId = data.values[0];
+
     return res.send({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-            content: 'Handling add competition alert.'
+            content: `🔔 Alerts for the competition enabled 🔔`
         }
     });
 }
 
-function handleRemoveCompetitionAlert(req, res) {
-    console.log('Handling remove competition alert.');
-    return res.send({
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: {
-            content: 'Handling remove competition alert.'
-        }
-    });
+function handleRemoveCompetitionSelection(req, res) {
+
 }
 
 function handleUnknownCommand(res, commandName) {
@@ -103,3 +231,16 @@ function handleUnknownCommand(res, commandName) {
         }
     });
 }
+
+const handler = {
+    handleAddTeamCommand,
+    handleRemoveTeamCommand,
+    handleAddCompetitionCommand,
+    handleRemoveCompetitionCommand,
+    handleUnknownCommand,
+    handleAddTeamSelection,
+    handleRemoveTeamSelection,
+    handleAddCompetitionSelection,
+    handleRemoveCompetitionSelection
+};
+export default handler;
