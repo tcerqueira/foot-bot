@@ -2,17 +2,13 @@ import 'dotenv/config';
 import express, { response } from 'express';
 import {
 	InteractionType,
-	InteractionResponseType,
-	InteractionResponseFlags,
-	MessageComponentTypes,
-	ButtonStyleTypes,
+	InteractionResponseType
 } from 'discord-interactions';
-import { VerifyDiscordRequest, getRandomEmoji, DiscordRequest } from './utils.js';
+import { VerifyDiscordRequest, parseCommandArgs } from './utils.js';
 import {
 	HasGuildCommands,
 	FOOTBALL_COMMAND,
 } from './commands.js';
-import footballAPI from './footballAPI.js';
 import handler from './handlers.js';
 
 // Create an express app
@@ -42,72 +38,29 @@ app.post('/interactions', async function (req, res) {
 	 * See https://discord.com/developers/docs/interactions/application-commands#slash-commands
 	 */
 	if (type === InteractionType.APPLICATION_COMMAND) {
-		const { name, options } = data;
+		const { name } = data;
+		const [ commandGroup, subCommand ] = parseCommandArgs(data);
 
 		if (name === 'football' && id) {
-			// console.log(options);
-			
-			switch (options[0].name) {
+			switch (commandGroup.name) {
 				case 'team_alert':
-					if(options[0].options[0].name === 'add')
+					if(subCommand.name === 'add')
 						return handler.handleAddTeamAlert(req, res);
-					else if(options[0].options[0].name === 'remove')
+					else if(subCommand.name === 'remove')
 						return handler.handleRemoveTeamAlert(req, res);
 					else
-						return handler.handleUnknownCommand(res, options[0].options[0].name);
+						return handler.handleUnknownCommand(res, subCommand.name);
 
 				case 'competition_alert':
-					if(options[0].options[0].name === 'add')
+					if(subCommand.name === 'add')
 						return handler.handleAddCompetitionAlert(req, res);
-					else if(options[0].options[0].name === 'remove')
+					else if(subCommand.name === 'remove')
 						return handler.handleRemoveCompetitionAlert(req, res);
 					else
-						return handler.handleUnknownCommand(res, options[0].options[0].name);
+						return handler.handleUnknownCommand(res, subCommand.name);
 			
 				default:
-					return handler.handleUnknownCommand(res, options[0].name);
-			}
-
-			try {
-				const { response: teams } = await footballAPI.searchTeam(teamSearch).then(res => res.json());
-				if (teams.length === 0) {
-					return res.send({
-						type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-						data: {
-							content: `No matches found for **${teamSearch}**\n`
-						}
-					});
-				}
-
-				res.send({
-					type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-					data: {
-						content: `Search results for: ${teamSearch}`,
-						// Indicates it'll be an ephemeral message
-						// flags: InteractionResponseFlags.EPHEMERAL,
-						components: [
-							{
-								type: MessageComponentTypes.ACTION_ROW,
-								components: [
-									{
-										type: MessageComponentTypes.STRING_SELECT,
-										// Append game ID
-										custom_id: `select_choice_${userId}`,
-										// Max of 25 choices
-										options: teams.slice(0, 25).map((item) => {
-											return {
-												label: item.team.name,
-												value: item.team.name.toLowerCase()
-											};
-										})
-									},
-								],
-							},
-						],
-					},
-				});
-			} catch (err) {
-				console.log(err);
+					return handler.handleUnknownCommand(res, commandGroup.name);
 			}
 		}
 	}
